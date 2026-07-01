@@ -92,6 +92,7 @@ enum Command {
     ///   fish: git issues completions fish > ~/.config/fish/completions/git-issues.fish
     ///
     /// Completes issue IDs for `show`, `edit`, `close`, and `reopen`.
+    #[command(verbatim_doc_comment)]
     Completions {
         /// Target shell
         #[arg(value_enum)]
