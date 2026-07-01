@@ -31,6 +31,9 @@ enum Command {
         /// Worktree path (default: ../<repo>-issues)
         #[arg(long)]
         path: Option<String>,
+        /// Don't install the bundled Claude skill into .claude/skills
+        #[arg(long)]
+        no_skill: bool,
     },
     /// Create a new issue and open your editor
     New {
@@ -86,7 +89,7 @@ enum Command {
 
 fn main() -> Result<()> {
     match Cli::parse().command {
-        Command::Init { branch, path } => cmd::init(branch, path),
+        Command::Init { branch, path, no_skill } => cmd::init(branch, path, no_skill),
         Command::New { title, sync } => cmd::new(&title, sync),
         Command::List { status, label } => cmd::list(status, label),
         Command::Show { id } => cmd::show(&id),

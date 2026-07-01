@@ -14,6 +14,12 @@ use crate::util;
 /// Minimum git version that provides `worktree add --orphan`.
 const MIN_GIT: (u32, u32) = (2, 42);
 
+/// The Claude skill installed into a repo on `init`, embedded at compile time.
+const SKILL_MD: &str = include_str!("../skills/git-issues/SKILL.md");
+
+/// Where the skill lands, relative to the repository root.
+const SKILL_REL: &str = ".claude/skills/git-issues/SKILL.md";
+
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
@@ -124,9 +130,28 @@ fn existing_issue(s: &Settings, id: &str) -> Result<PathBuf> {
 // init
 // ---------------------------------------------------------------------------
 
-pub fn init(branch: Option<String>, path: Option<String>) -> Result<()> {
+/// Write the bundled Claude skill into `<root>/.claude/skills/git-issues/`.
+/// Existing files are left untouched so local edits survive re-runs.
+fn install_skill(root: &str) -> Result<()> {
+    let file = Path::new(root).join(SKILL_REL);
+    if file.exists() {
+        return Ok(());
+    }
+    let dir = file.parent().expect("SKILL_REL always has a parent");
+    fs::create_dir_all(dir)
+        .with_context(|| format!("cannot create {}", dir.display()))?;
+    fs::write(&file, SKILL_MD).with_context(|| format!("cannot write {}", file.display()))?;
+    println!("Installed Claude skill to {SKILL_REL}");
+    Ok(())
+}
+
+pub fn init(branch: Option<String>, path: Option<String>, no_skill: bool) -> Result<()> {
     ensure_version()?;
-    config::repo_root()?; // fail early if not in a repo
+    let root = config::repo_root()?; // fail early if not in a repo
+
+    if !no_skill {
+        install_skill(&root)?;
+    }
 
     if let Some(branch) = branch {
         config::set("issues.branch", &branch)?;
