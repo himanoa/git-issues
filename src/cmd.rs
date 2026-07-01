@@ -74,6 +74,14 @@ fn issue_id(id: &str) -> &str {
     id.strip_suffix(".md").unwrap_or(id)
 }
 
+/// The issue's ID: its front-matter `id` (when non-empty), else the file stem.
+fn id_from_doc(path: &Path, doc: &Document) -> Option<String> {
+    doc.get("id")
+        .filter(|v| !v.is_empty())
+        .map(str::to_string)
+        .or_else(|| path.file_stem().map(|s| s.to_string_lossy().into_owned()))
+}
+
 fn issue_path(s: &Settings, id: &str) -> PathBuf {
     Path::new(&s.path)
         .join("issues")
@@ -267,11 +275,7 @@ pub fn list(status: Option<String>, label: Option<String>) -> Result<()> {
             continue;
         }
         let doc = read_doc(&path)?;
-        let id = doc
-            .get("id")
-            .map(str::to_string)
-            .or_else(|| path.file_stem().map(|s| s.to_string_lossy().into_owned()))
-            .unwrap_or_default();
+        let id = id_from_doc(&path, &doc).unwrap_or_default();
         let issue_status = doc.get("status").unwrap_or_default().to_string();
         let title = doc.get("title").unwrap_or_default().to_string();
         let labels = doc.get("labels").unwrap_or_default();
@@ -440,10 +444,7 @@ pub fn collect_issue_ids(s: &Settings) -> Vec<String> {
             continue;
         }
         let id = match fs::read_to_string(&path) {
-            Ok(raw) => Document::parse(&raw)
-                .get("id")
-                .map(str::to_string)
-                .or_else(|| path.file_stem().map(|s| s.to_string_lossy().into_owned())),
+            Ok(raw) => id_from_doc(&path, &Document::parse(&raw)),
             Err(_) => path.file_stem().map(|s| s.to_string_lossy().into_owned()),
         };
         if let Some(id) = id {
@@ -533,6 +534,20 @@ mod tests {
         let ids = collect_issue_ids(&s);
         assert_eq!(ids, vec!["no-frontmatter-1234".to_string()]);
 
+        fs::remove_dir_all(&base).ok();
+    }
+
+    #[test]
+    fn empty_id_falls_back_to_file_stem() {
+        let (s, base) = temp_worktree();
+        // front-matter present but `id:` empty → must fall back to the stem.
+        fs::write(
+            base.join("issues").join("empty-id-9999.md"),
+            "---\nid: \ntitle: t\nstatus: open\n---\n\nbody\n",
+        )
+        .unwrap();
+        let ids = collect_issue_ids(&s);
+        assert_eq!(ids, vec!["empty-id-9999".to_string()]);
         fs::remove_dir_all(&base).ok();
     }
 }

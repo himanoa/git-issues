@@ -31,9 +31,13 @@ case $state in
     args)
         case $line[1] in
             show|edit|close|reopen)
-                local -a ids
-                ids=(${(f)"$(git issues complete-ids 2>/dev/null)"})
-                _describe -t issues 'issue' ids
+                local raw
+                raw="$(git issues complete-ids 2>/dev/null)"
+                if [[ -n "$raw" ]]; then
+                    local -a ids
+                    ids=(${(f)raw})
+                    _describe -t issues 'issue' ids
+                fi
                 ;;
             completions)
                 local -a shells

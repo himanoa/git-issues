@@ -18,11 +18,7 @@ _git_issues() {
 
     case "$sub" in
         show|edit|close|reopen)
-            if [[ "$cur" == -* ]]; then
-                COMPREPLY=($(compgen -W "--sync" -- "$cur"))
-            else
-                COMPREPLY=($(compgen -W "$(git issues complete-ids 2>/dev/null)" -- "$cur"))
-            fi
+            COMPREPLY=($(compgen -W "$(git issues complete-ids 2>/dev/null)" -- "$cur"))
             ;;
         completions)
             COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur"))

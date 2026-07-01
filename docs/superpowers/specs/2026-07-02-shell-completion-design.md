@@ -22,7 +22,7 @@
 - タイトルや説明文を候補に併記する（MVP は ID のみ。将来拡張として保留）。
 - 補完スクリプトの自動インストール（本ツールは出力のみ。設置は手動手順を案内）。
 - `clap_complete` による静的補完や unstable な動的補完エンジンの採用。
-- フラグ値（`--status` 等）の値補完（サブコマンド名とフラグ名の補完までに留める）。
+- フラグ値（`--status` 等）の値補完、およびフラグ名（`--sync` 等）の補完（サブコマンド名と issue ID の補完までに留める）。
 
 ## 方針
 
@@ -60,7 +60,8 @@
 ### 3. シェル別スクリプトの挙動
 
 いずれも第1位置引数はサブコマンド名を補完し、`show/edit/close/reopen` の ID 位置引数で
-`git issues complete-ids` を呼んで候補化する。フラグ名（`--sync` 等）も補完する。
+`git issues complete-ids` を呼んで候補化する。補完対象はサブコマンド名と issue ID（および
+`completions` のシェル名）のみで、フラグ名（`--sync` 等）は補完しない。
 
 - **bash** (`_git_issues`): git-completion.bash が提供する `$cur`/`$prev`/`$words`/`$cword`
   を用い、対象コマンドの ID 位置では
