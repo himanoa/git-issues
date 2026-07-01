@@ -81,6 +81,9 @@ enum Command {
     },
     /// fetch + merge + push the issues branch
     Sync,
+    /// (internal) print issue IDs for shell completion
+    #[command(hide = true)]
+    CompleteIds,
     /// Print the issues worktree path
     Path,
     /// Show ahead/behind of the issues branch
@@ -97,6 +100,7 @@ fn main() -> Result<()> {
         Command::Close { id, sync } => cmd::set_status(&id, "closed", sync),
         Command::Reopen { id, sync } => cmd::set_status(&id, "open", sync),
         Command::Sync => cmd::sync(),
+        Command::CompleteIds => cmd::complete_ids(),
         Command::Path => cmd::path(),
         Command::Status => cmd::status(),
     }

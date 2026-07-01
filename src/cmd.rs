@@ -416,3 +416,123 @@ pub fn status() -> Result<()> {
     git::run(&["-C", &s.path, "status", "-sb"])?;
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// completion helpers
+// ---------------------------------------------------------------------------
+
+/// Collect issue IDs under `<worktree>/issues/*.md`, sorted.
+///
+/// Robust by design: a missing/unreadable directory or a malformed file yields
+/// an empty list (or is skipped) rather than an error — this feeds shell
+/// completion, which must never see a failure.
+pub fn collect_issue_ids(s: &Settings) -> Vec<String> {
+    let dir = Path::new(&s.path).join("issues");
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        Err(_) => return Vec::new(),
+    };
+
+    let mut ids: Vec<String> = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("md") {
+            continue;
+        }
+        let id = match fs::read_to_string(&path) {
+            Ok(raw) => Document::parse(&raw)
+                .get("id")
+                .map(str::to_string)
+                .or_else(|| path.file_stem().map(|s| s.to_string_lossy().into_owned())),
+            Err(_) => path.file_stem().map(|s| s.to_string_lossy().into_owned()),
+        };
+        if let Some(id) = id {
+            ids.push(id);
+        }
+    }
+    ids.sort();
+    ids
+}
+
+/// Hidden subcommand: print issue IDs one per line for shell completion.
+/// Never errors — an uninitialized repo simply prints nothing.
+pub fn complete_ids() -> Result<()> {
+    if let Ok(s) = config::resolve() {
+        for id in collect_issue_ids(&s) {
+            println!("{id}");
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Settings;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+    /// A throwaway worktree dir with an empty `issues/` subdir.
+    fn temp_worktree() -> (Settings, PathBuf) {
+        let n = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let base = std::env::temp_dir()
+            .join(format!("git-issues-test-{}-{}", std::process::id(), n));
+        fs::create_dir_all(base.join("issues")).unwrap();
+        let s = Settings {
+            branch: "meta/issues".into(),
+            path: base.to_string_lossy().into_owned(),
+            remote: None,
+        };
+        (s, base)
+    }
+
+    /// Write an issue file. When `id` is Some, emit front-matter carrying it;
+    /// otherwise write a body-only file so the ID must fall back to the stem.
+    fn write_issue(base: &Path, file_stem: &str, id: Option<&str>) {
+        let path = base.join("issues").join(format!("{file_stem}.md"));
+        let content = match id {
+            Some(id) => format!("---\nid: {id}\ntitle: t\nstatus: open\n---\n\nbody\n"),
+            None => "just a body, no front-matter\n".to_string(),
+        };
+        fs::write(path, content).unwrap();
+    }
+
+    #[test]
+    fn ids_are_sorted_and_from_frontmatter() {
+        let (s, base) = temp_worktree();
+        write_issue(&base, "second-file", Some("zeta-aaaa"));
+        write_issue(&base, "first-file", Some("alpha-bbbb"));
+        // A non-markdown file must be ignored.
+        fs::write(base.join("issues").join("notes.txt"), "ignore me").unwrap();
+
+        let ids = collect_issue_ids(&s);
+        assert_eq!(ids, vec!["alpha-bbbb".to_string(), "zeta-aaaa".to_string()]);
+
+        fs::remove_dir_all(&base).ok();
+    }
+
+    #[test]
+    fn missing_issues_dir_yields_empty() {
+        let n = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let base = std::env::temp_dir()
+            .join(format!("git-issues-test-missing-{}-{}", std::process::id(), n));
+        let s = Settings {
+            branch: "meta/issues".into(),
+            path: base.to_string_lossy().into_owned(),
+            remote: None,
+        };
+        assert!(collect_issue_ids(&s).is_empty());
+    }
+
+    #[test]
+    fn id_falls_back_to_file_stem() {
+        let (s, base) = temp_worktree();
+        write_issue(&base, "no-frontmatter-1234", None);
+
+        let ids = collect_issue_ids(&s);
+        assert_eq!(ids, vec!["no-frontmatter-1234".to_string()]);
+
+        fs::remove_dir_all(&base).ok();
+    }
+}
