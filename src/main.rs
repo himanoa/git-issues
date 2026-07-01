@@ -83,6 +83,15 @@ enum Command {
     /// fetch + merge + push the issues branch
     Sync,
     /// Print a shell completion script (bash, zsh, or fish)
+    ///
+    /// Install:
+    ///   zsh:  git issues completions zsh  > "${fpath[1]}/_git-issues"   # then: compinit
+    ///   bash: git issues completions bash > ~/.git-issues-completion.bash
+    ///         # then source it AFTER git's completion in ~/.bashrc:
+    ///         #   source ~/.git-issues-completion.bash
+    ///   fish: git issues completions fish > ~/.config/fish/completions/git-issues.fish
+    ///
+    /// Completes issue IDs for `show`, `edit`, `close`, and `reopen`.
     Completions {
         /// Target shell
         #[arg(value_enum)]
