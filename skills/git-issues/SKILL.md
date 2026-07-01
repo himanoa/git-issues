@@ -1,6 +1,6 @@
 ---
 name: git-issues
-description: Use when creating, editing, listing, closing, or syncing issues with the git-issues CLI (git issues new/edit/list/show/close/reopen/sync) — especially in a non-interactive/agent environment, or when `git issues new` / `git issues edit` hangs or blocks waiting for an editor.
+description: Use whenever creating, editing, listing, closing, or syncing issues — including bare requests like "issue立てて" / "create an issue" / "open an issue". In this repo, issues are tracked with the git-issues CLI (git issues new/edit/list/show/close/reopen/sync), NOT with `gh issue`. Especially in a non-interactive/agent environment, or when `git issues new` / `git issues edit` hangs or blocks waiting for an editor.
 ---
 
 # git-issues
