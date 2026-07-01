@@ -1,0 +1,16 @@
+# git issues — fish completion.
+
+# Disable file completion once `issues` is on the command line.
+complete -c git -n '__fish_seen_subcommand_from issues' -f
+
+# Subcommand names (only before a sub-subcommand is chosen).
+complete -c git -n '__fish_seen_subcommand_from issues; and not __fish_seen_subcommand_from init new list show edit close reopen sync path status completions' \
+    -a 'init new list show edit close reopen sync path status completions'
+
+# Dynamic issue IDs for the ID-taking commands.
+complete -c git -n '__fish_seen_subcommand_from issues; and __fish_seen_subcommand_from show edit close reopen' \
+    -a '(git issues complete-ids 2>/dev/null)'
+
+# Shell names for `completions`.
+complete -c git -n '__fish_seen_subcommand_from issues; and __fish_seen_subcommand_from completions' \
+    -a 'bash zsh fish'

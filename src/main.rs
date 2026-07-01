@@ -2,6 +2,7 @@
 //! dedicated worktree so they sync via `git push`/`pull` like anything else.
 
 mod cmd;
+mod completions;
 mod config;
 mod frontmatter;
 mod git;
@@ -81,6 +82,12 @@ enum Command {
     },
     /// fetch + merge + push the issues branch
     Sync,
+    /// Print a shell completion script (bash, zsh, or fish)
+    Completions {
+        /// Target shell
+        #[arg(value_enum)]
+        shell: completions::Shell,
+    },
     /// (internal) print issue IDs for shell completion
     #[command(hide = true)]
     CompleteIds,
@@ -100,6 +107,7 @@ fn main() -> Result<()> {
         Command::Close { id, sync } => cmd::set_status(&id, "closed", sync),
         Command::Reopen { id, sync } => cmd::set_status(&id, "open", sync),
         Command::Sync => cmd::sync(),
+        Command::Completions { shell } => completions::print(shell),
         Command::CompleteIds => cmd::complete_ids(),
         Command::Path => cmd::path(),
         Command::Status => cmd::status(),

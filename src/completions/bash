@@ -1,0 +1,31 @@
+# git issues — bash completion (source after git's own bash completion).
+# git's completion calls `_git_issues` for `git issues …`.
+_git_issues() {
+    local subcommands="init new list show edit close reopen sync path status completions"
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local sub="" i
+    for ((i = 2; i < COMP_CWORD; i++)); do
+        case "${COMP_WORDS[i]}" in
+            init|new|list|show|edit|close|reopen|sync|path|status|completions)
+                sub="${COMP_WORDS[i]}"; break;;
+        esac
+    done
+
+    if [ -z "$sub" ]; then
+        COMPREPLY=($(compgen -W "$subcommands" -- "$cur"))
+        return
+    fi
+
+    case "$sub" in
+        show|edit|close|reopen)
+            if [[ "$cur" == -* ]]; then
+                COMPREPLY=($(compgen -W "--sync" -- "$cur"))
+            else
+                COMPREPLY=($(compgen -W "$(git issues complete-ids 2>/dev/null)" -- "$cur"))
+            fi
+            ;;
+        completions)
+            COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur"))
+            ;;
+    esac
+}

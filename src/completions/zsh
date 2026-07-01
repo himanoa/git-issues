@@ -1,0 +1,45 @@
+#compdef git-issues
+# git issues — zsh completion. zsh's _git dispatches to _git-issues for
+# `git issues …`; this file also serves the standalone `git-issues` binary.
+
+local curcontext="$curcontext" state line
+typeset -A opt_args
+
+local -a subcommands
+subcommands=(
+    'init:Set up the issues worktree'
+    'new:Create a new issue'
+    'list:List issues'
+    'show:Print an issue'
+    'edit:Edit an issue'
+    'close:Close an issue'
+    'reopen:Reopen an issue'
+    'sync:Sync the issues branch'
+    'path:Print the worktree path'
+    'status:Show ahead/behind'
+    'completions:Print a shell completion script'
+)
+
+_arguments -C \
+    '1: :->subcommand' \
+    '*:: :->args' && return
+
+case $state in
+    subcommand)
+        _describe -t commands 'git issues command' subcommands
+        ;;
+    args)
+        case $line[1] in
+            show|edit|close|reopen)
+                local -a ids
+                ids=(${(f)"$(git issues complete-ids 2>/dev/null)"})
+                _describe -t issues 'issue' ids
+                ;;
+            completions)
+                local -a shells
+                shells=(bash zsh fish)
+                _describe -t shells 'shell' shells
+                ;;
+        esac
+        ;;
+esac
